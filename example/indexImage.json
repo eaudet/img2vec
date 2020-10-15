@@ -1,0 +1,25 @@
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 1,
+    "index": {
+      "knn": true,
+      "knn.space_type": "cosinesimil"
+    }
+  },
+   "mappings": {
+    "dynamic": "true",
+    "_source": {
+      "enabled": "true"
+    },
+    "properties": {
+      "title": {
+        "type": "text"
+      },
+      "image_vector": {
+        "type": "knn_vector",
+        "dimension": 512
+      }
+    }
+  }
+}
