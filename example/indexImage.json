@@ -16,6 +16,9 @@
       "title": {
         "type": "text"
       },
+      "url": {
+        "type": "text"
+      },
       "image_vector": {
         "type": "knn_vector",
         "dimension": 512

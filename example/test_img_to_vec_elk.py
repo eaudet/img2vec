@@ -9,19 +9,26 @@ from sklearn.metrics.pairwise import cosine_similarity
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elasticsearch import RequestsHttpConnection
+import requests
+from io import BytesIO
 
 
 def index_batch(docs):
-    requests = []
+    products = []
     for i, doc in enumerate(docs):
-        request = doc
-        img = Image.open(os.path.join(input_path, doc["image"]))
+        product = doc
+        # img = Image.open(os.path.join(input_path, doc["image"]))
+        url = product["url"][0]
+        response = requests.get(url)
+        img = Image.open(BytesIO(response.content))
         vec = img2vec.get_vec(img)
-        request["_op_type"] = "index"
-        request["_index"] = INDEX_NAME
-        request["image_vector"] = vec
-        requests.append(request)
-    bulk(client, requests)
+        product["_op_type"] = "index"
+        product["_index"] = INDEX_NAME
+        product["image_vector"] = vec
+        product["title"] = doc["name"]
+        product["url"] = url
+        products.append(product)
+    bulk(client, products)
 
 
 def index_data():
@@ -35,26 +42,30 @@ def index_data():
     docs = []
     count = 0
 
-    with open(DATA_FILE) as data_file:
-        for line in data_file:
-            line = line.strip()
-
-            doc = json.loads(line)
-            # if doc["type"] != "question":
-            #     continue
-
-            docs.append(doc)
+    with open(DATA_FILE) as f:
+        images = json.load(f)
+        for image in images:
+            docs.append(image)
             count += 1
-
+    # with open(DATA_FILE) as data_file:
+    #     for line in data_file:
+    #         line = line.strip()
+    #
+    #         doc = json.loads(line)
+    #         # if doc["type"] != "question":
+    #         #     continue
+    #
+    #         docs.append(doc)
+    #         count += 1
+    #
             if count % BATCH_SIZE == 0:
                 index_batch(docs)
                 docs = []
                 print("Indexed {} documents.".format(count))
-
+    #
         if docs:
             index_batch(docs)
             print("Indexed {} documents.".format(count))
-
     client.indices.refresh(index=INDEX_NAME)
     print("Done indexing.")
 
@@ -66,48 +77,53 @@ def run_query_loop():
             return
 
 def handle_query():
-    query = input("Enter file name: ")
+    query = input("Enter file name (url): ")
 
     embedding_start = time.time()
-    img = Image.open(os.path.join(input_path, query))
-    query_vector = img2vec.get_vec(img)
-    embedding_time = time.time() - embedding_start
+    # img = Image.open(os.path.join(input_path, query))
+    response = requests.get(query)
+    img = Image.open(BytesIO(response.content))
+    try:
+        query_vector = img2vec.get_vec(img)
+        embedding_time = time.time() - embedding_start
 
-    script_query = {
-        "knn": {
-            "image_vector": {
-                "vector": query_vector,
-                "k": 2
+        script_query = {
+            "knn": {
+                "image_vector": {
+                    "vector": query_vector,
+                    "k": 2
+                }
             }
         }
-    }
 
-    search_start = time.time()
-    response = client.search(
-        index=INDEX_NAME,
-        body={
-            "size": SEARCH_SIZE,
-            "query": script_query,
-            "_source": {"includes": ["title"]}
-        }
-    )
-    search_time = time.time() - search_start
+        search_start = time.time()
+        response = client.search(
+            index=INDEX_NAME,
+            body={
+                "size": SEARCH_SIZE,
+                "query": script_query,
+                "_source": {"includes": ["title", "url"]}
+            }
+        )
+        search_time = time.time() - search_start
 
-    print()
-    print("{} total hits.".format(response["hits"]["total"]["value"]))
-    print("embedding time: {:.2f} ms".format(embedding_time * 1000))
-    print("search time: {:.2f} ms".format(search_time * 1000))
-    for hit in response["hits"]["hits"]:
-        print("id: {}, score: {}".format(hit["_id"], hit["_score"]))
-        print(hit["_source"])
         print()
+        print("{} total hits.".format(response["hits"]["total"]["value"]))
+        print("embedding time: {:.2f} ms".format(embedding_time * 1000))
+        print("search time: {:.2f} ms".format(search_time * 1000))
+        for hit in response["hits"]["hits"]:
+            print("id: {}, score: {}".format(hit["_id"], hit["_score"]))
+            print(hit["_source"])
+            print()
+    except:
+        print("Invalid image")
 
 if __name__ == '__main__':
     INDEX_NAME = "images"
 
     INDEX_FILE = "indexImage.json"
 
-    DATA_FILE = "images.json"
+    DATA_FILE = "web_images_small.json"
 
     BATCH_SIZE = 1000
 
