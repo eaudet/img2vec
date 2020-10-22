@@ -1,0 +1,15 @@
+Riesling  Mysterium Rr+ Sb Jidvei
+search: https://shop.jidvei.ro/file/2017/11/mysterium-rr-sb.jpg
+indexed: https://res.cloudinary.com/www-celliersintelligents-com/image/upload/v1493130830/jzrb8le9zgtcp3p6oztc.jpg
+
+Cognac X.O. Bons Bois Lhéraud
+search: https://static.cognac-expert.com/3014-thickbox_default/lheraud-vintage-fins-bois-1966-cognac.jpg
+indexed: https://res.cloudinary.com/www-celliersintelligents-com/image/upload/v1493131145/kjgkemujurdmnddxnmbn.jpg
+Notes: search contains box and bottle
+
+Lalande-de-Pomerol Domaine de Viaud
+search: https://ik.imagekit.io/rjaktrg7x/viniecapricci/wp-content/uploads/2019/09/Domaine_de_Viaud_1999_Tall.jpg
+indexed: https://res.cloudinary.com/www-celliersintelligents-com/image/upload/v1565971343/alfred/approbations/hbe5ndacdbimw6klemmb.jpg
+Notes: label complexity, shadows and angle
+
+

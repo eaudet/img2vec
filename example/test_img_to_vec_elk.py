@@ -21,13 +21,16 @@ def index_batch(docs):
         url = product["url"][0]
         response = requests.get(url)
         img = Image.open(BytesIO(response.content))
-        vec = img2vec.get_vec(img)
-        product["_op_type"] = "index"
-        product["_index"] = INDEX_NAME
-        product["image_vector"] = vec
-        product["title"] = doc["name"]
-        product["url"] = url
-        products.append(product)
+        try:
+            vec = img2vec.get_vec(img)
+            product["_op_type"] = "index"
+            product["_index"] = INDEX_NAME
+            product["image_vector"] = vec
+            product["title"] = doc["name"]
+            product["url"] = url
+            products.append(product)
+        except:
+            print("Cannot vectorize the image: " + doc["name"])
     bulk(client, products)
 
 
@@ -42,11 +45,18 @@ def index_data():
     docs = []
     count = 0
 
+    # using json urls
     with open(DATA_FILE) as f:
         images = json.load(f)
         for image in images:
             docs.append(image)
             count += 1
+            if count % BATCH_SIZE == 0:
+                index_batch(docs)
+                docs = []
+                print("Indexed {} documents.".format(count))
+
+    # using json
     # with open(DATA_FILE) as data_file:
     #     for line in data_file:
     #         line = line.strip()
@@ -57,12 +67,12 @@ def index_data():
     #
     #         docs.append(doc)
     #         count += 1
+    #         if count % BATCH_SIZE == 0:
+    #             index_batch(docs)
+    #             docs = []
+    #             print("Indexed {} documents.".format(count))
     #
-            if count % BATCH_SIZE == 0:
-                index_batch(docs)
-                docs = []
-                print("Indexed {} documents.".format(count))
-    #
+
         if docs:
             index_batch(docs)
             print("Indexed {} documents.".format(count))
@@ -123,11 +133,11 @@ if __name__ == '__main__':
 
     INDEX_FILE = "indexImage.json"
 
-    DATA_FILE = "web_images_small.json"
+    DATA_FILE = "web_images.json"
 
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 100
 
-    SEARCH_SIZE = 5
+    SEARCH_SIZE = 10
 
     GPU_LIMIT = 0.5
 
